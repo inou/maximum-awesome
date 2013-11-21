@@ -1,3 +1,15 @@
+let $VIM = expand('~/.vim/')
+let $TMP = expand($VIM . 'tmp/')
+let $BUNDLES = expand($VIM . 'bundle/')
+
+let g:author = 'Maciek Wcislik <maciekwcislik@gmail.com>'
+
+if !isdirectory($TMP)
+  call mkdir($TMP, "p")
+endif
+
+
+
 set nocursorline " don't highlight current line
 
 " keyboard shortcuts
@@ -31,3 +43,166 @@ function! s:RemoveConflictingAlignMaps()
 endfunction
 command! -nargs=0 RemoveConflictingAlignMaps call s:RemoveConflictingAlignMaps()
 silent! autocmd VimEnter * RemoveConflictingAlignMaps
+
+
+
+set backspace=indent,eol,start
+
+set shiftwidth=4
+set softtabstop=4
+set tabstop=8
+
+set notimeout
+set ttimeout
+set ttimeoutlen=10
+
+set completeopt=longest,menuone
+set ofu=syntaxcomplete#Complete
+
+
+set wildignore+=.hg,.git,.svn,rel
+set wildignore+=*.aux,*.out,*.toc
+set wildignore+=*.jpg,*.bmp,*.gif,*.png,*.jpeg
+set wildignore+=*.o,*.obj,*.exe,*.dll,*.manifest
+set wildignore+=*.spl
+set wildignore+=*.DS_Store
+set wildignore+=*.luac
+set wildignore+=migrations
+set wildignore+=*.pyc
+set wildignore+=*.beam
+
+
+autocmd FileType     gitcommit   set spell
+autocmd FileType     markdown    set spell
+autocmd FileType     make        set modelines=0
+autocmd FileType     unite       call s:unite_settings()
+autocmd BufWritePost *.py        call Flake8()
+
+nnoremap <leader>x <C-W>c
+
+function! Preserve(command)
+    let _s=@/
+    let l = line(".")
+    let c = col(".")
+    execute a:command
+    let @/=_s
+    call cursor(l, c)
+endfunction
+
+nmap <leader>i :call Preserve("normal gg=G")<CR>
+nmap <leader>C :call Preserve("%s/\\s\\+$//e")<CR>
+
+set backup
+set backupdir=$TMP
+set history=5000
+set noswapfile
+set undodir=$TMP
+set undofile
+set undolevels=5000
+silent! execute '!find '. $TMP .' -type f -mtime +60 -exec rm {} \;'
+silent! execute '!mkdir '. $TMP .'> /dev/null 2>&1'
+
+function! ShortCwd()
+    return substitute(getcwd(), $HOME, "~", "")
+endfunction
+
+set laststatus=2
+set statusline=
+set statusline +=%#error#
+set statusline +=%{&paste?'[paste]':''}
+set statusline +=%*
+if exists(":Git")
+    set statusline +=\ %{fugitive#statusline()}
+endif
+set statusline +=\ %<%f\ %*
+set statusline +=\ \ %m%r%w\
+set statusline +=%=%l%*
+set statusline +=:%=%c%*
+set statusline +=\ %y\ %*
+set statusline +=\ %{&ff}\ %*
+set statusline +=%{strlen(&fenc)?&fenc:'none'}
+set statusline +=\ \|\ %{ShortCwd()}
+
+set list
+set listchars=
+set lcs+=tab:>-
+set lcs+=extends:›
+set lcs+=precedes:‹
+set lcs+=nbsp:·
+set lcs+=trail:·
+
+set sua+=.erl
+set sua+=.hrl
+let erlp=substitute(system("command -v erl"), "/bin/erl", "/lib/**/src/", "")
+exe ":set path+="."src/,deps/**/src/,apps/**/src/,**/include/," . erlp
+
+function! GoToFile()
+    call inputsave()
+    let f = input('File/Module: ')
+    call inputrestore()
+    exec "find " . f
+endfunction
+
+noremap <C-g> :call GoToFile()<CR>
+
+let g:unite_enable_start_insert = 1
+let g:unite_winheight = 10
+let g:unite_split_rule = 'botright'
+let g:unite_source_grep_command = 'ack-grep'
+let g:unite_source_grep_default_opts = '--no-heading --no-color -a -H'
+let g:unite_source_grep_recursive_opt = ''
+
+function! s:unite_settings()
+    imap <buffer> jj <Plug>(unite_insert_leave)
+    imap <buffer> <C-w> <Plug>(unite_delete_backward_path)
+    imap <buffer> <leader> <Esc><leader>
+endfunction
+
+nnoremap <leader>b :<C-u>Unite buffer<CR>
+nnoremap <leader>a :<C-u>Unite grep -default-action=above<CR>
+nnoremap <leader>A :<C-u>execute
+            \ 'Unite grep:.::' . expand("<cword>") . '
+            \ -default-action=above -auto-preview'<CR>
+nnoremap <C-p> :<C-u>:Unite history/yank<CR>
+
+let g:ref_use_vimproc = 1
+let g:ref_open = 'split'
+let g:ref_cache_dir = expand($TMP . '/vim_ref_cache/')
+nno <leader>K :<C-u>Unite ref/erlang
+            \ -vertical -default-action=split<CR>
+let g:neosnippet#snippets_directory = expand($VIM . 'snippets')
+imap <C-k>     <Plug>(neosnippet_expand_or_jump)
+smap <C-k>     <Plug>(neosnippet_expand_or_jump)
+xmap <C-k>     <Plug>(neosnippet_expand_target)
+
+
+nnoremap <leader>gs :Gstatus<CR><C-W>15+
+autocmd BufReadPost fugitive://* set bufhidden=delete
+autocmd BufReadPost fugitive://*
+            \ if fugitive#buffer().type() =~# '^\%(tree\|blob\)$' |
+            \   nnoremap <buffer> .. :edit %:h<CR> |
+            \ endif
+
+if has("lua")
+    let g:neocomplete#enable_at_startup = 1
+    let g:neocomplete#enable_smart_case = 1
+    inoremap <silent> <CR> <C-r>=<SID>my_cr_function()<CR>
+    function! s:my_cr_function()
+        "return neocomplete#close_popup() . "\<CR>"
+        "For no inserting <CR> key.
+        return pumvisible() ? neocomplete#close_popup() : "\<CR>"
+    endfunction
+    autocmd FileType erlang setlocal omnifunc=erlang_complete#Complete 
+    inoremap <expr><TAB>  pumvisible() ? "\<C-n>" : "\<TAB>"
+    inoremap <expr><C-h> neocomplete#smart_close_popup()."\<C-h>"
+    inoremap <expr><BS> neocomplete#smart_close_popup()."\<C-h>"
+      call neocomplete#util#set_default_dictionary(
+        \'g:neocomplete#force_omni_input_patterns',
+        \'erlang',
+        \'\<[[:digit:][:alnum:]_-]\+:[[:digit:][:alnum:]_-]*')
+endif
+
+match  ErrorMsg '\%>79v.\+'
+2match ErrorMsg '\s\+$'
+3match ErrorMsg '^\(<\|=\|>\)\{7\}\([^=].\+\)\?$'
+
