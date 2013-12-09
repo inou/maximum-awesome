@@ -11,9 +11,12 @@ endif
 
 
 set nocursorline " don't highlight current line
+set relativenumber
+set number
 
 " keyboard shortcuts
 inoremap jj <ESC>
+inoremap <ESC> <Nop>
 
 " highlight search
 "set hlsearch
