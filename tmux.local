@@ -1,0 +1,45 @@
+tmux has-session -t ubnt
+
+if [ $? != 0 ]
+then
+
+    # new session named work and detachment
+    tmux new-session -s ubnt -n work -d
+
+    tmux send-keys -t ubnt 'cd ~/dev/ubnt' C-m
+    tmux send-keys -t ubnt 'vim' C-m
+
+    # spliting window horizontally 30 percent
+    tmux split-window -h -p 30 -t ubnt
+    tmux send-keys -t ubnt:1.2 'cd ~/dev/ubnt' C-m
+    tmux send-keys -t ubnt:1.2 'weechat' C-m
+
+
+
+
+
+    tmux new-window -t ubnt -n utils
+    tmux split-window -h -t ubnt:2
+    tmux split-window -h -t ubnt:2
+    tmux split-window -h -t ubnt:2
+    tmux select-layout -t ubnt:2 tiled
+
+
+    tmux send-keys -t ubnt:2.1 'cd ~/dev/ubnt' C-m
+    tmux send-keys -t ubnt:2.1 'elasticsearch -f -D es.cofig=/usr/local/opt/elasticsearch/config/elasticsearch.yml' C-m
+
+    tmux send-keys -t ubnt:2.2 'cd ~/dev/ubnt' C-m
+    tmux send-keys -t ubnt:2.2 'cassandra -f' C-m
+
+    tmux send-keys -t ubnt:2.3 'cd ~/dev/ubnt' C-m
+    tmux send-keys -t ubnt:2.3 'riak start' C-m
+
+    tmux send-keys -t ubnt:2.4 'cd ~/dev/ubnt' C-m
+    tmux clock-mode -t ubnt:2.4
+
+    tmux select-window -t ubnt:1
+    tmux select-pane -t ubnt:1.1
+
+fi
+
+tmux attach -t ubnt
