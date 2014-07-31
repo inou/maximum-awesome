@@ -83,6 +83,8 @@ autocmd FileType     unite       call s:unite_settings()
 autocmd BufWritePost *.py        call Flake8()
 
 nnoremap <leader>x <C-W>c
+nnoremap <leader>y :tab sp<CR>
+nnoremap <leader>h :tabclose<CR>
 
 function! Preserve(command)
     let _s=@/
